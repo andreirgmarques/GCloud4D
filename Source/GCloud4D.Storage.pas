@@ -20,7 +20,7 @@ type
 
     function CheckFileExists(AFileName: String): Boolean;
     function DeleteFile(AFileName: String): IGCloud4DStorage;
-    function DownloadFile(ADirectory, AFileName: String): IGCloud4DStorage;
+    function DownloadFile(AFullPath, AFileName: String): IGCloud4DStorage;
     function ListFiles: TJSONArray;
     function MoveFile(AOrigin, ADestination: String): IGCloud4DStorage;
     function UploadFile(AFullPath, AFileName: String): IGCloud4DStorage;
@@ -57,7 +57,7 @@ begin
   inherited;
 end;
 
-function TGCloud4DStorage.DownloadFile(ADirectory, AFileName: String): IGCloud4DStorage;
+function TGCloud4DStorage.DownloadFile(AFullPath, AFileName: String): IGCloud4DStorage;
 begin
   Result := Self;
   var LResponse := Self.PrepareRequest
@@ -70,12 +70,12 @@ begin
   if LResponse.StatusCode <> 200 then
     raise EGCloud4DException.CreateFmt('Failed to download file from the bucket!%s%s', [sLineBreak, LResponse.Content]);
 
-  if not TDirectory.Exists(ADirectory) then
-    TDirectory.CreateDirectory(ADirectory);
-  if TFile.Exists(TPath.Combine(ADirectory, AFileName)) then
-    TFile.Delete(TPath.Combine(ADirectory, AFileName));
+  if not TDirectory.Exists(TPath.GetDirectoryName(AFullPath)) then
+    TDirectory.CreateDirectory(TPath.GetDirectoryName(AFullPath));
+  if TFile.Exists(AFullPath) then
+    TFile.Delete(AFullPath);
 
-  var LFile := TFileStream.Create(TPath.Combine(ADirectory, AFileName), fmCreate);
+  var LFile := TFileStream.Create(AFullPath, fmCreate);
   try
     LFile.WriteBuffer(LResponse.RawBytes[0], Length(LResponse.RawBytes));
   finally
